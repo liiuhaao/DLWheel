@@ -1,10 +1,6 @@
-[build-system]
-requires = ["setuptools>=42", "wheel", "twine"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "dlwheel"
-version = "1.0.6"
+version = "1.0.7"
 description = "A lightweight deep learning library."
 readme = "README.md"
 authors = [{ name = "liiuhaao", email = "liiuhaao66@gmail.com" }]
