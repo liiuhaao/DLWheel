@@ -1,5 +1,6 @@
 import os
 import shutil
+import stat
 import subprocess
 from pathlib import Path
 
@@ -15,16 +16,12 @@ class BackupSystem:
         self.backup_dir = Path(log_path) / cfg.name / "backup"
 
     def run(self):
+        if self.backup_dir.exists():
+            shutil.rmtree(str(self.backup_dir))
         self.backup_dir.mkdir(parents=True, exist_ok=True)
         self._copy_project_files()
-        self._export_environment()
         self._save_current_config()
         self._make_backup_readonly()
-
-    def _export_environment(self):
-        env_file = self.backup_dir / "environment.yml"
-        with env_file.open("w") as f:
-            subprocess.run(["conda", "env", "export"], stdout=f, check=True)
 
     def _load_gitignore(self) -> GitIgnoreSpec:
         gitignore_path = Path(".gitignore")
@@ -63,7 +60,7 @@ class BackupSystem:
 
     def _make_backup_readonly(self):
         for root, dirs, files in os.walk(self.backup_dir):
-            os.chmod(root, 0o555)
-            for name in files:
-                file_path = Path(root) / name
-                os.chmod(file_path, 0o444)  # 只读权限
+            for name in dirs + files:
+                path = Path(root) / name
+                if not path.is_dir():
+                    path.chmod(0o444)

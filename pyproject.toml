@@ -4,16 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dlwheel"
-version = "1.0.4"
+version = "1.0.6"
 description = "A lightweight deep learning library."
 readme = "README.md"
 authors = [{ name = "liiuhaao", email = "liiuhaao66@gmail.com" }]
 requires-python = ">=3.6"
-dependencies = ["pyyaml", "pathspec"]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+dependencies = [
+    "pathspec>=0.9.0",
+    "pyyaml>=6.0.1",
 ]
 
 [tool.setuptools]

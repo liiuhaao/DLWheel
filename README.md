@@ -8,11 +8,13 @@ A lightweight deep learning library.
 ## Installation
 
 ### Editable Installation
+
 ```bash
 pip install -e .
 ```
 
 ### Stable Release
+
 ```bash
 pip install dlwheel
 ```
@@ -20,12 +22,13 @@ pip install dlwheel
 ## Getting Started
 
 ### Basic Usage
+
 ```python
 from pprint import pprint
 
 import dlwheel
 
-cfg = setup()
+cfg = dlwheel.setup()
 pprint(cfg)
 ```
 
