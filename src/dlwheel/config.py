@@ -3,51 +3,47 @@ import time
 from pathlib import Path
 
 import yaml
-
-from .obj import Obj
+from box import Box
 
 
 class ConfigLoader:
     def __init__(self):
-        self._cfg = dict()
-        self._args = None
+        self._cfg = Box(default_box=True, default_box_attr=None, box_dots=True)
 
     def run(self):
         args = self._parse_args()
-        self._cfg.update(self._load_yaml(args.config))
-        for key, value in vars(args).items():
-            if key in self._cfg:
-                try:
-                    value = type(self._cfg[key])(value)
-                except (ValueError, TypeError):
-                    pass
-            self._cfg[key] = value
-        return Obj(**self._cfg)
+        self._load_config(args.config)
+        self._overide_config(args)
+        return self._cfg
 
     def _parse_args(self):
-        parser = argparse.ArgumentParser(allow_abbrev=False)
-        parser.add_argument("--config", type=str, default="config/default.yaml")
-        parser.add_argument("--backup", action="store_true", default=False)
-        parser.add_argument("--name", default=time.strftime("%y%m%d%H%M%S", time.localtime()), type=str)
-
-        args, unknown_args = parser.parse_known_args()
-        unknown_dict = {}
-        for arg in unknown_args:
-            if arg.startswith("--"):
-                if "=" in arg:
-                    key, value = arg.split("=", 1)
-                    unknown_dict[key.lstrip("--")] = value
-                else:
-                    unknown_dict[arg.lstrip("--")] = True
-
-        for key, value in unknown_dict.items():
-            setattr(args, key, value)
-
+        p = argparse.ArgumentParser(allow_abbrev=False)
+        p.add_argument("--config", default="config/default.yaml")
+        p.add_argument("--backup", action="store_true")
+        p.add_argument("--name", default=time.strftime("%y%m%d%H%M%S"))
+        args, unk = p.parse_known_args()
+        for arg in unk:
+            k, _, v = arg.lstrip("-").partition("=")
+            setattr(args, k, v if _ else True)
         return args
 
-    def _load_yaml(self, path):
-        if not Path(path).exists():
-            return dict()
-            raise FileNotFoundError(f"Config file {path} not found")
-        with open(path, "r") as f:
-            return yaml.load(f, Loader=yaml.FullLoader)
+    def _load_config(self, config_path):
+        if Path(config_path).exists():
+            yaml_cfg = yaml.load(open(config_path), yaml.FullLoader)
+            self._cfg.update(yaml_cfg)
+
+    def _overide_config(self, args):
+        for key, value in vars(args).items():
+            *path, key = key.split(".")
+            current = self._cfg
+            for p in path:
+                if current[p] is None:
+                    current[p] = Box(default_box=True, default_box_attr=None, box_dots=True)
+                current = current[p]
+            current[key] = self._convert(value, current.get(key))
+
+    def _convert(self, value, origin):
+        try:
+            return type(origin)(value) if origin else value
+        except:
+            return value

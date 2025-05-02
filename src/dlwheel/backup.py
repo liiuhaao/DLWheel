@@ -1,7 +1,5 @@
-import os
-import shutil
-import stat
-import subprocess
+import warnings
+import zipfile
 from pathlib import Path
 
 import yaml
@@ -9,58 +7,51 @@ from pathspec import GitIgnoreSpec
 
 
 class BackupSystem:
-
     def __init__(self, cfg):
         self.cfg = cfg
         log_path = cfg.path.log if cfg.path and cfg.path.log else f"log"
-        self.backup_dir = Path(log_path) / cfg.name / "backup"
+        self.backup_dir = Path(log_path) / cfg.name
 
     def run(self):
-        if self.backup_dir.exists():
-            shutil.rmtree(str(self.backup_dir))
         self.backup_dir.mkdir(parents=True, exist_ok=True)
-        self._copy_project_files()
-        self._save_current_config()
-        self._make_backup_readonly()
+        self._create_backup_zip()
 
-    def _load_gitignore(self) -> GitIgnoreSpec:
+    def _load_gitignore(self):
         gitignore_path = Path(".gitignore")
         if not gitignore_path.exists():
             return GitIgnoreSpec([])
         with gitignore_path.open("r") as f:
             return GitIgnoreSpec.from_lines(f)
 
-    def _should_ignore(self, path: Path, spec: GitIgnoreSpec) -> bool:
+    def _should_ignore(self, path, spec):
         git_style_path = path.relative_to(Path.cwd()).as_posix()
         if path.is_dir():
             git_style_path += "/"
         return spec.match_file(git_style_path)
 
-    def _copy_project_files(self):
+    def _write_config_to_zip(self, zip_file: zipfile.ZipFile) -> None:
+        config_content = yaml.dump(self.cfg.to_dict())
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            zip_file.writestr(str(self.cfg.config), config_content)
+
+    def _create_backup_zip(self):
         ignore_spec = self._load_gitignore()
         backup_abs = self.backup_dir.resolve()
+        zip_path = self.backup_dir / "backup.zip"
 
-        for item in Path.cwd().rglob("*"):
-            item_abs = item.resolve()
-            if item_abs == backup_abs or backup_abs in item_abs.parents:
-                continue
-            if self._should_ignore(item, ignore_spec):
-                continue
-            if item.is_dir():
-                continue
-            dest = self.backup_dir / item.relative_to(Path.cwd())
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(item, dest)
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in Path.cwd().rglob("*"):
+                file_abs = file_path.resolve()
 
-    def _save_current_config(self):
-        config_path = self.backup_dir / self.cfg.config
-        config_path.parent.mkdir(exist_ok=True)
-        with config_path.open("w") as f:
-            yaml.dump(self.cfg.to_dict(), f)
+                if file_abs == backup_abs or backup_abs in file_abs.parents:
+                    continue
+                if self._should_ignore(file_path, ignore_spec):
+                    continue
+                if not file_path.is_file():
+                    continue
 
-    def _make_backup_readonly(self):
-        for root, dirs, files in os.walk(self.backup_dir):
-            for name in dirs + files:
-                path = Path(root) / name
-                if not path.is_dir():
-                    path.chmod(0o444)
+                arcname = file_path.relative_to(Path.cwd())
+                zipf.write(file_path, arcname)
+
+            self._write_config_to_zip(zipf)
