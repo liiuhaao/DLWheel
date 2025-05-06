@@ -1,3 +1,4 @@
+import shutil
 import warnings
 import zipfile
 from pathlib import Path
@@ -13,6 +14,7 @@ class BackupSystem:
         self.backup_dir = Path(log_path) / cfg.name
 
     def run(self):
+        shutil.rmtree(self.backup_dir, ignore_errors=True)
         self.backup_dir.mkdir(parents=True, exist_ok=True)
         self._create_backup_zip()
 

@@ -53,5 +53,5 @@ batch_size: 32
 #### Command-Line Argument Override
 
 ```bash
-python main.py --batch_size=2 --config=config/exp.yaml --name=exp
+python main.py --config=config/exp.yaml --name=exp batch_size=2 lr=0.1
 ```

@@ -1,6 +1,6 @@
 [project]
 name = "dlwheel"
-version = "1.0.9"
+version = "1.0.10"
 description = "A lightweight deep learning library."
 readme = "README.md"
 authors = [{ name = "liiuhaao", email = "liiuhaao66@gmail.com" }]
