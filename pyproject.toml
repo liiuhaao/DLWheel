@@ -1,6 +1,6 @@
 [project]
 name = "dlwheel"
-version = "1.0.10"
+version = "1.0.11"
 description = "A lightweight deep learning library."
 readme = "README.md"
 authors = [{ name = "liiuhaao", email = "liiuhaao66@gmail.com" }]
@@ -20,3 +20,6 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[project.scripts]
+dlwheel = "dlwheel.cli.main:main"

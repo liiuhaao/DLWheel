@@ -5,6 +5,8 @@ from pathlib import Path
 import yaml
 from box import Box
 
+from dlwheel.utils import get_timestamp_name
+
 
 class ConfigLoader:
     def __init__(self):
@@ -17,11 +19,17 @@ class ConfigLoader:
         return self._cfg
 
     def _parse_args(self):
-        p = argparse.ArgumentParser(allow_abbrev=False)
-        p.add_argument("--config", default="config/default.yaml")
-        p.add_argument("--backup", action="store_true")
-        p.add_argument("--name", default=time.strftime("%y%m%d%H%M%S"))
-        args, unk = p.parse_known_args()
+        parser = argparse.ArgumentParser(allow_abbrev=False)
+        parser.add_argument("--config", default="config/default.yaml")
+        parser.add_argument("--backup", action="store_true")
+        parser.add_argument("--name", default=get_timestamp_name())
+        parser.add_argument("--tmp", action="store_true")
+
+        args, unk = parser.parse_known_args()
+
+        if args.tmp:
+            args.name = "_tmp"
+
         for arg in unk:
             k, _, v = arg.lstrip("-").partition("=")
             setattr(args, k, v if _ else True)
@@ -38,7 +46,9 @@ class ConfigLoader:
             current = self._cfg
             for p in path:
                 if current[p] is None:
-                    current[p] = Box(default_box=True, default_box_attr=None, box_dots=True)
+                    current[p] = Box(
+                        default_box=True, default_box_attr=None, box_dots=True
+                    )
                 current = current[p]
             current[key] = self._convert(value, current.get(key))
 
