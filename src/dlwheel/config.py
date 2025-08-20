@@ -22,6 +22,7 @@ class ConfigLoader:
         parser = argparse.ArgumentParser(allow_abbrev=False)
         parser.add_argument("--config", default="config/default.yaml")
         parser.add_argument("--backup", action="store_true")
+        parser.add_argument("--resume", action="store_true")
         parser.add_argument("--name", default=get_timestamp_name())
         parser.add_argument("--tmp", action="store_true")
 
