@@ -21,14 +21,14 @@ class ConfigLoader:
     def _parse_args(self):
         parser = argparse.ArgumentParser(allow_abbrev=False)
         parser.add_argument("--config", default="config/default.yaml")
-        parser.add_argument("--backup", action="store_true")
-        parser.add_argument("--resume", action="store_true")
+        parser.add_argument("--backup", action="store_true", default=argparse.SUPPRESS)
+        parser.add_argument("--resume", action="store_true", default=argparse.SUPPRESS)
         parser.add_argument("--name", default=get_timestamp_name())
-        parser.add_argument("--tmp", action="store_true")
+        parser.add_argument("--tmp", action="store_true", default=argparse.SUPPRESS)
 
         args, unk = parser.parse_known_args()
 
-        if args.tmp:
+        if getattr(args, "tmp", False):
             args.name = "_tmp"
 
         for arg in unk:
@@ -46,12 +46,18 @@ class ConfigLoader:
             *path, key = key.split(".")
             current = self._cfg
             for p in path:
-                if current[p] is None:
+                if not isinstance(current.get(p), (Box, dict)):
                     current[p] = Box(
                         default_box=True, default_box_attr=None, box_dots=True
                     )
                 current = current[p]
-            current[key] = self._convert(value, current.get(key))
+            origin = current.get(key)
+            # If CLI passes a bare True (e.g. --backup) and the YAML already
+            # holds a dict-like value, treat it as "enable" without destroying
+            # the existing sub-config.
+            if value is True and isinstance(origin, (Box, dict)):
+                continue
+            current[key] = self._convert(value, origin)
 
     def _convert(self, value, origin):
         try:
